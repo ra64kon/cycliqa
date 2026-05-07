@@ -5,7 +5,7 @@
 
 **C**omplete **Y**ield & **C**ode **L**ifecycle **I**ntelligence **Q**uality **A**utomation
 
-Cycliqa is an innovative, AI-driven architecture template designed to automate and orchestrate the complete Software Development Lifecycle (SDLC). It bridges the gap between conceptual system design and production-ready code by intelligently connecting all phases of software development.
+Cycliqa is an AI-driven architecture template designed to automate and orchestrate the complete Software Development Lifecycle (SDLC). It bridges the gap between conceptual system design and production-ready code by intelligently connecting all phases of software development.
 
 ## Vision & Concept
 
