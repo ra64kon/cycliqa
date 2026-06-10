@@ -1,0 +1,134 @@
+openapi: 3.1.0
+info:
+  title: order_terminal API
+  version: 0.1.1
+  description: Interne API der Component order_terminal. Prozessstart erfolgt nicht in dieser Component, sondern ueber den aufrufenden Kanal.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: order_terminal
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    BeverageType:
+      type: string
+      enum: [Espresso, Cappuccino, Latte Macchiato]
+    OrderStatus:
+      type: string
+      enum: [accepted, delivered, delivery_escalated]
+    PlaceOrderRequest:
+      type: object
+      required: [beverage_type, with_milk_foam, customer_name]
+      properties:
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    OrderResponse:
+      type: object
+      required: [order_id, status, beverage_type, with_milk_foam, customer_name]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+paths:
+  /api/v1/orders:
+    post:
+      tags: [order_terminal]
+      summary: Bestellung anlegen
+      description: Interne Write-API fuer den Bestellkontext ohne Prozessstart.
+      operationId: place_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '201':
+          description: Bestellung angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Ungueltige Eingabe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [order_terminal]
+      summary: Bestellstatus lesen
+      operationId: get_order_status
+      description: Liefert den Bestellstatus der Bestellung. Laufender Prozessfortschritt wird im Demo getrennt ueber process_control bereitgestellt.
+      parameters:
+        - in: query
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Bestellstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Fehlender Query-Parameter oder andere Eingabefehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bestellung nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

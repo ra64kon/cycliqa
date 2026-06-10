@@ -1,0 +1,68 @@
+@startuml biz_arch_diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam rectangle {
+  BackgroundColor #E8F0FE
+  BorderColor #1A73E8
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+  FontSize 13
+}
+skinparam arrow {
+  Color #5F6368
+  FontSize 11
+}
+
+title Fachliches Kontextdiagramm: CoffeeToGo – Kaffee-Bestellprozess\n
+
+actor "Kunde" as Kunde
+
+rectangle "order_terminal\n[ordering]" as OT {
+  rectangle "Bestellung\nentgegennehmen" as OT_place
+  rectangle "Status\nabfragen" as OT_status
+}
+
+rectangle "process_control\n[kaffee_bestellprozess]" as PC {
+  rectangle "Prozess\nsteuern" as PC_steuer
+}
+
+rectangle "brewing_station\n[brewing]" as BS {
+  rectangle "Bohnen\nmahlen" as BS_grind
+  rectangle "Kaffee\nbruehen" as BS_brew
+  rectangle "Milch\naufschaeumen" as BS_milk
+}
+
+rectangle "delivery_robot\n[delivery]" as DR {
+  rectangle "Kaffee\nausliefern" as DR_deliver
+}
+
+' Kunde -> order_terminal
+Kunde --> OT_place : stellt Bestellung\n(Sorte, Milchschaum, Zielposition)
+Kunde --> OT_status : fragt Status ab\n(Bestell-ID)
+
+' order_terminal -> process_control
+OT_place --> PC_steuer : startet Prozess\n(Bestell-ID, Sorte, Milchschaum, Zielposition)
+
+' process_control -> brewing_station (sequenziell)
+PC_steuer --> BS_grind : mahlt Bohnen\n(Bestell-ID, Sorte)
+BS_grind --> BS_brew : gemahlenes Pulver\n(Bestell-ID, Sorte)
+BS_brew --> BS_milk : gebruehter Kaffee\n(Bestell-ID, Milchschaum-Option)
+
+' brewing_station -> process_control (Rueckmeldung)
+BS_milk --> PC_steuer : Zubereitung fertig\n(Bestell-ID)
+
+' process_control -> delivery_robot
+PC_steuer --> DR_deliver : liefert aus\n(Bestell-ID, Zielposition)
+
+' delivery_robot -> process_control (Rueckmeldung)
+DR_deliver --> PC_steuer : Auslieferung abgeschlossen\n(Bestell-ID)
+
+' process_control -> order_terminal (Status-Update)
+PC_steuer ..> OT_status : Status aktualisieren\n(angenommen, in Zubereitung, ausgeliefert)
+
+@enduml

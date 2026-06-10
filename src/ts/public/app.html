@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrewHub - Order App</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;max-width:600px;margin:2rem auto;padding:0 1rem;background:#f8fafc}
+h1{color:#1a202c;margin-bottom:.25rem}
+.sub{color:#718096;margin-bottom:1.5rem}
+.card{background:#fff;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.card h2{font-size:1.1rem;color:#2d3748;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid #e2e8f0}
+label{display:block;font-size:.85rem;color:#4a5568;margin-bottom:.25rem;font-weight:500}
+select,input{width:100%;padding:.6rem;border:1px solid #cbd5e0;border-radius:8px;font-size:1rem;margin-bottom:.75rem;background:#fff}
+.checkbox-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.checkbox-row input{width:auto;margin-bottom:0}
+.btn{width:100%;padding:.7rem;background:#3182ce;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:500}
+.btn:hover{background:#2b6cb0}
+.btn:disabled{opacity:.5;cursor:default}
+.result{margin-top:.75rem;padding:.75rem;background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;font-size:.9rem;display:none}
+.result.error{background:#fff5f5;border-color:#fed7d7}
+.result pre{margin:0;white-space:pre-wrap;word-break:break-word}
+.back{display:block;text-align:center;margin-top:2rem;color:#718096}
+.progress-bar{width:100%;height:24px;background:#e2e8f0;border-radius:12px;overflow:hidden;margin:.5rem 0}
+.progress-fill{height:100%;border-radius:12px;transition:width .5s;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700}
+.progress-fill.blue{background:#3182ce}
+.progress-fill.green{background:#38a169}
+.progress-fill.red{background:#e53e3e}
+.steps{display:flex;justify-content:space-between;margin-bottom:.25rem}
+.step{font-size:.7rem;color:#a0aec0;text-align:center}
+.step.done{color:#38a169;font-weight:700}
+.step.active{color:#3182ce;font-weight:700}
+.timer{text-align:center;color:#718096;font-size:.85rem;margin-top:.25rem;display:none}
+.session-bar{font-size:.78rem;color:#a0aec0;margin-bottom:1rem;text-align:right}
+.session-bar.ready{color:#38a169}
+.session-bar.error{color:#e53e3e}
+</style>
+</head>
+<body>
+<h1>☕ BrewHub</h1>
+<p class="sub">Coffee order demo with live status</p>
+<div class="session-bar" id="sessionBar">Initialising session…</div>
+
+<div class="card">
+<h2>📝 Place Order</h2>
+<label>Beverage</label>
+<select id="beverage">
+<option value="Espresso">Espresso</option>
+<option value="Cappuccino" selected>Cappuccino</option>
+<option value="Latte Macchiato">Latte Macchiato</option>
+</select>
+<div class="checkbox-row">
+<input type="checkbox" id="milk" checked>
+<label style="margin-bottom:0">With milk foam</label>
+</div>
+<label>Customer name</label>
+<input type="text" id="dest" value="Alice" placeholder="e.g. Alice">
+<button type="button" class="btn" id="btnOrder" disabled>Order</button>
+<div class="result" id="orderResult"></div>
+</div>
+
+<div class="card" id="processCard" style="display:none">
+<h2>⚡ Live Process Status</h2>
+<div class="steps" id="steps"></div>
+<div class="progress-bar"><div class="progress-fill blue" id="progressFill" style="width:0%">0%</div></div>
+<div class="timer" id="timer"></div>
+<div style="margin-top:.5rem;color:#4a5568;font-size:.85rem">
+Order ID: <strong id="liveOrderId">—</strong> | Process ID: <strong id="liveProcessId">—</strong>
+</div>
+<div id="liveStatus" style="margin-top:.5rem;font-weight:700;color:#2d3748"></div>
+</div>
+
+<div class="card">
+<h2>🔍 Check Order Status</h2>
+<label>Order ID</label>
+<input type="text" id="orderId" placeholder="ORDER-...">
+<button type="button" class="btn" id="btnStatus" disabled>Check Status</button>
+<div class="result" id="statusResult"></div>
+</div>
+
+<a class="back" href="/">← Back to overview</a>
+
+<script>
+console.log("BrewHub app loaded");
+
+let AUTH = null;
+const ALL_STEPS = ["grind_beans", "prepare_coffee", "froth_milk", "deliver_order"];
+const STEP_LABELS = { grind_beans: "Grind", prepare_coffee: "Brew", froth_milk: "Milk", deliver_order: "Deliver" };
+let pollTimer = null;
+let startTime = null;
+
+// ── Session init ──────────────────────────────────────────────────────────────
+async function initSession() {
+  var bar = document.getElementById("sessionBar");
+  try {
+    var r = await fetch("/api/v1/web-channel/session", { method: "POST" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    var d = await r.json();
+    AUTH = "Bearer " + d.access_token;
+    bar.textContent = "✓ Session active";
+    bar.className = "session-bar ready";
+    document.getElementById("btnOrder").disabled = false;
+    document.getElementById("btnStatus").disabled = false;
+    console.log("Session established");
+  } catch (e) {
+    bar.textContent = "⚠ Session failed — reload page";
+    bar.className = "session-bar error";
+    console.error("Session error:", e);
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function show(el, data, isErr) {
+  el.style.display = "block";
+  el.className = "result" + (isErr ? " error" : "");
+  el.innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+}
+
+function renderSteps(withMilk) {
+  var html = "";
+  ALL_STEPS.filter(function(s) { return withMilk || s !== "froth_milk"; }).forEach(function(s) {
+    html += '<span class="step" id="step-' + s + '">' + STEP_LABELS[s] + '</span>';
+  });
+  document.getElementById("steps").innerHTML = html;
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+function startPolling(processId, orderId, withMilk) {
+  if (pollTimer) clearInterval(pollTimer);
+  document.getElementById("processCard").style.display = "block";
+  document.getElementById("liveOrderId").textContent = orderId;
+  document.getElementById("liveProcessId").textContent = processId;
+  document.getElementById("liveStatus").textContent = "Process running…";
+  document.getElementById("progressFill").className = "progress-fill blue";
+  renderSteps(withMilk);
+  startTime = Date.now();
+
+  var steps = ALL_STEPS.filter(function(s) { return withMilk || s !== "froth_milk"; });
+  var completedIdx = -1;
+
+  pollTimer = setInterval(async function() {
+    document.getElementById("timer").style.display = "block";
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById("timer").textContent = "⌛ " + elapsed + "s";
+
+    try {
+      var r = await fetch("/api/v1/web-channel/processes/" + encodeURIComponent(processId), {
+        headers: { Authorization: AUTH }
+      });
+      var d = await r.json();
+      if (d.error) return;
+
+      var lastStep = d.last_completed_step || "";
+      if (lastStep === "escalate_delivery" || d.process_status === "escalated") {
+        document.getElementById("liveStatus").innerHTML = '<span style="color:#e53e3e">⚠ Escalated</span>';
+        document.getElementById("progressFill").className = "progress-fill red";
+        document.getElementById("progressFill").style.width = "100%";
+        document.getElementById("progressFill").textContent = "⚠";
+        clearInterval(pollTimer);
+        pollTimer = null;
+        return;
+      }
+      if (d.process_status === "completed") {
+        document.getElementById("liveStatus").innerHTML = '<span style="color:#38a169">✅ Completed</span>';
+        document.getElementById("progressFill").className = "progress-fill green";
+        document.getElementById("progressFill").style.width = "100%";
+        document.getElementById("progressFill").textContent = "✓";
+        steps.forEach(function(s) {
+          var el2 = document.getElementById("step-" + s);
+          if (el2) el2.classList.add("done");
+        });
+        clearInterval(pollTimer);
+        pollTimer = null;
+        return;
+      }
+
+      var found = -1;
+      for (var i = 0; i < steps.length; i++) {
+        if (steps[i] === lastStep) { found = i; break; }
+      }
+      if (found >= 0) {
+        for (var j = 0; j <= found; j++) {
+          var el3 = document.getElementById("step-" + steps[j]);
+          if (el3) el3.classList.add("done");
+        }
+      }
+      if (found >= 0 && found !== completedIdx) {
+        completedIdx = found;
+        var pct = Math.round(((found + 1) / steps.length) * 100);
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressFill").textContent = pct + "%";
+        document.getElementById("liveStatus").textContent = "🔄 " + steps[found].replace(/_/g, " ");
+      }
+    } catch (e) {
+      console.error("Poll error:", e);
+    }
+  }, 1000);
+}
+
+// ── Place order ───────────────────────────────────────────────────────────────
+document.getElementById("btnOrder").onclick = async function() {
+  console.log("Order button clicked");
+  if (!AUTH) { alert("No active session. Please reload."); return; }
+  var el = document.getElementById("orderResult");
+  el.style.display = "none";
+  var btn = document.getElementById("btnOrder");
+  btn.disabled = true;
+  btn.textContent = "Ordering…";
+  var milk = document.getElementById("milk").checked;
+  try {
+    var body = JSON.stringify({
+      beverage_type: document.getElementById("beverage").value,
+      with_milk_foam: milk,
+      customer_name: document.getElementById("dest").value
+    });
+    console.log("Sending:", body);
+    var r = await fetch("/api/v1/web-channel/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: AUTH },
+      body: body
+    });
+    var d = await r.json();
+    console.log("Response:", r.status, d);
+    show(el, d, r.status >= 400);
+    if (r.status === 201) {
+      document.getElementById("orderId").value = d.order_id;
+      var pid = d.process_id || ("PROC-" + d.order_id.replace("ORDER-", ""));
+      startPolling(pid, d.order_id, milk);
+    }
+  } catch (e) {
+    console.error("Error:", e);
+    show(el, { error: e.message }, true);
+  }
+  btn.disabled = false;
+  btn.textContent = "Order";
+};
+
+// ── Check order status ────────────────────────────────────────────────────────
+document.getElementById("btnStatus").onclick = async function() {
+  console.log("Check status clicked");
+  if (!AUTH) { alert("No active session. Please reload."); return; }
+  var el = document.getElementById("statusResult");
+  el.style.display = "none";
+  var oid = document.getElementById("orderId").value.trim();
+  if (!oid) {
+    show(el, { error: "Please enter an Order ID" }, true);
+    return;
+  }
+  try {
+    var r = await fetch("/api/v1/web-channel/orders/" + encodeURIComponent(oid), {
+      headers: { Authorization: AUTH }
+    });
+    var d = await r.json();
+    show(el, d, r.status >= 400);
+  } catch (e) {
+    show(el, { error: e.message }, true);
+  }
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+console.log("Event handlers registered");
+initSession();
+</script>
+</body>
+</html>

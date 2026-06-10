@@ -1,0 +1,702 @@
+openapi: 3.1.0
+info:
+  title: CoffeeToGo API
+  version: 0.1.2
+  description: Konsolidierte API-Spezifikation fuer das Projekt Cycliqa (CoffeeToGo). Das Frontend interagiert ausschliesslich mit dem web_channel; interne Komponenten sprechen ueber signierte Bearer-Tokens miteinander.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: system
+  - name: web_channel
+  - name: order_terminal
+  - name: brewing_station
+  - name: delivery_robot
+  - name: process_control
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    HealthResponse:
+      type: object
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
+    BeverageType:
+      type: string
+      enum: [Espresso, Cappuccino, Latte Macchiato]
+    OrderStatus:
+      type: string
+      enum: [accepted, delivered, delivery_escalated]
+    PlaceOrderRequest:
+      type: object
+      required: [beverage_type, with_milk_foam, customer_name]
+      properties:
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    OrderResponse:
+      type: object
+      required: [order_id, status, beverage_type, with_milk_foam, customer_name]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    SessionTokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+    SubmitOrderResponse:
+      allOf:
+        - $ref: '#/components/schemas/OrderResponse'
+        - type: object
+          required: [process_id]
+          properties:
+            process_id:
+              type: string
+    OrderStepRequest:
+      type: object
+      required: [order_id]
+      properties:
+        order_id:
+          type: string
+    BrewingStepResponse:
+      type: object
+      required: [order_id, step, status]
+      properties:
+        order_id:
+          type: string
+        step:
+          type: string
+          enum: [grind_beans, prepare_coffee, froth_milk]
+        status:
+          type: string
+          enum: [completed]
+    DeliveryStatus:
+      type: string
+      enum: [delivered, failed, escalated]
+    DeliverOrderRequest:
+      type: object
+      required: [order_id, destination]
+      properties:
+        order_id:
+          type: string
+        destination:
+          type: string
+    DeliveryResponse:
+      type: object
+      required: [order_id, status, attempt_number]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        attempt_number:
+          type: integer
+    RetryDeliveryRequest:
+      type: object
+      required: [order_id]
+      properties:
+        order_id:
+          type: string
+    RetryDeliveryResponse:
+      type: object
+      required: [order_id, status, retry_count]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        retry_count:
+          type: integer
+    EscalateDeliveryRequest:
+      type: object
+      required: [order_id, failure_reason]
+      properties:
+        order_id:
+          type: string
+        failure_reason:
+          type: string
+    EscalateDeliveryResponse:
+      type: object
+      required: [order_id, status, failure_reason]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        failure_reason:
+          type: string
+    ProcessStatus:
+      type: string
+      enum: [running, completed, escalated]
+    StartOrderProcessRequest:
+      type: object
+      required: [order_id, beverage_type, with_milk_foam]
+      properties:
+        order_id:
+          type: string
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        process_id:
+          type: string
+    StartOrderProcessResponse:
+      type: object
+      required: [process_id, order_id, process_status]
+      properties:
+        process_id:
+          type: string
+        order_id:
+          type: string
+        process_status:
+          $ref: '#/components/schemas/ProcessStatus'
+    ProcessStatusResponse:
+      type: object
+      required: [process_id, order_id, process_status]
+      properties:
+        process_id:
+          type: string
+        order_id:
+          type: string
+        process_status:
+          $ref: '#/components/schemas/ProcessStatus'
+        last_completed_step:
+          type:
+            - string
+            - 'null'
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Health check
+      operationId: get_health
+      security: []
+      responses:
+        '200':
+          description: API erreichbar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/web-channel/session:
+    post:
+      tags: [web_channel]
+      summary: Web-Session starten
+      operationId: create_web_session
+      security: []
+      responses:
+        '200':
+          description: Bearer-Token fuer den Web-Kanal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTokenResponse'
+  /api/v1/web-channel/orders:
+    post:
+      tags: [web_channel]
+      summary: Bestellung ueber den Web-Kanal anlegen
+      operationId: submit_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '201':
+          description: Bestellung und Prozess angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitOrderResponse'
+        '400':
+          description: Ungueltige Eingabe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/web-channel/orders/{orderId}:
+    get:
+      tags: [web_channel]
+      summary: Bestellstatus ueber den Web-Kanal lesen
+      operationId: get_channel_order_status
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Bestellstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bestellung nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/web-channel/processes/{processId}:
+    get:
+      tags: [web_channel]
+      summary: Prozessstatus ueber den Web-Kanal lesen
+      operationId: get_channel_process_status
+      parameters:
+        - in: path
+          name: processId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Prozessstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStatusResponse'
+        '400':
+          description: Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prozess nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/orders:
+    post:
+      tags: [order_terminal]
+      summary: Bestellung anlegen
+      description: Interne Write-API fuer den Bestellkontext ohne Prozessstart.
+      operationId: place_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '201':
+          description: Bestellung angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Ungueltige Eingabe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [order_terminal]
+      summary: Bestellstatus lesen
+      operationId: get_order_status
+      description: Liefert den Bestellstatus der Bestellung fuer interne Aufrufer; das Frontend nutzt dafuer den Web-Kanal.
+      parameters:
+        - in: query
+          name: order_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Bestellstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Fehlender Query-Parameter oder Eingabefehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bestellung nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/brewing/grind:
+    post:
+      tags: [brewing_station]
+      summary: Bohnen mahlen
+      operationId: grind_beans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Mahl-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/brewing/prepare:
+    post:
+      tags: [brewing_station]
+      summary: Kaffee zubereiten
+      operationId: prepare_coffee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Zubereitungs-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/brewing/froth-milk:
+    post:
+      tags: [brewing_station]
+      summary: Milch aufschaeumen
+      operationId: froth_milk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Milchschaum-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/delivery:
+    post:
+      tags: [delivery_robot]
+      summary: Bestellung ausliefern
+      operationId: deliver_order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverOrderRequest'
+      responses:
+        '200':
+          description: Auslieferungsversuch verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/delivery/retry:
+    post:
+      tags: [delivery_robot]
+      summary: Auslieferung wiederholen
+      operationId: retry_delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryDeliveryRequest'
+      responses:
+        '200':
+          description: Wiederholungsversuch verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetryDeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/delivery/escalate:
+    post:
+      tags: [delivery_robot]
+      summary: Auslieferung eskalieren
+      operationId: escalate_delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalateDeliveryRequest'
+      responses:
+        '200':
+          description: Eskalation verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalateDeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/process-control/processes:
+    post:
+      tags: [process_control]
+      summary: Bestellprozess starten
+      operationId: start_order_process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartOrderProcessRequest'
+      responses:
+        '201':
+          description: Prozessinstanz angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartOrderProcessResponse'
+        '400':
+          description: Fehlende Pflichtfelder oder Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/process-control/processes/{processId}:
+    get:
+      tags: [process_control]
+      summary: Prozessstatus lesen
+      operationId: get_process_status
+      parameters:
+        - in: path
+          name: processId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Prozessstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStatusResponse'
+        '400':
+          description: Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prozess nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

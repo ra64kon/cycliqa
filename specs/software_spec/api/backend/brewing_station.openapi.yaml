@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: brewing_station API
+  version: 0.1.0
+  description: API der Component brewing_station gemass implementierter Hono-Routen.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: brewing_station
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    OrderStepRequest:
+      type: object
+      required: [order_id]
+      properties:
+        order_id:
+          type: string
+    BrewingStepResponse:
+      type: object
+      required: [order_id, step, status]
+      properties:
+        order_id:
+          type: string
+        step:
+          type: string
+          enum: [grind_beans, prepare_coffee, froth_milk]
+        status:
+          type: string
+          enum: [completed]
+paths:
+  /api/v1/brewing/grind:
+    post:
+      tags: [brewing_station]
+      summary: Bohnen mahlen
+      operationId: grind_beans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Mahl-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/brewing/prepare:
+    post:
+      tags: [brewing_station]
+      summary: Kaffee zubereiten
+      operationId: prepare_coffee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Zubereitungs-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/brewing/froth-milk:
+    post:
+      tags: [brewing_station]
+      summary: Milch aufschaeumen
+      operationId: froth_milk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStepRequest'
+      responses:
+        '200':
+          description: Milchschaum-Schritt abgeschlossen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrewingStepResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

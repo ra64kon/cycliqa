@@ -1,0 +1,566 @@
+openapi: 3.1.0
+info:
+  title: DummyJSON Recipes API
+  version: 1.0.0
+  description: >-
+    OpenAPI-Spezifikation fuer die Demo-Schnittstelle unter https://dummyjson.com/recipes.
+    Schreiboperationen sind laut Anbieter simuliert und persistieren keine Aenderungen.
+servers:
+  - url: https://dummyjson.com
+tags:
+  - name: recipes
+    description: Rezeptsuche und Rezeptverwaltung ueber DummyJSON.
+externalDocs:
+  description: Offizielle DummyJSON Recipes Dokumentation
+  url: https://dummyjson.com/docs/recipes
+components:
+  parameters:
+    LimitParam:
+      name: limit
+      in: query
+      description: Maximale Anzahl an Ergebnissen. `0` liefert alle Eintraege.
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 30
+    SkipParam:
+      name: skip
+      in: query
+      description: Anzahl zu ueberspringender Eintraege fuer Pagination.
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SelectParam:
+      name: select
+      in: query
+      description: Kommagetrennte Liste von Feldnamen fuer partielle Antworten.
+      required: false
+      schema:
+        type: string
+        example: name,image
+    SortByParam:
+      name: sortBy
+      in: query
+      description: Feldname, nach dem sortiert werden soll.
+      required: false
+      schema:
+        type: string
+        example: name
+    OrderParam:
+      name: order
+      in: query
+      description: Sortierreihenfolge fuer `sortBy`.
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+    RecipeIdParam:
+      name: id
+      in: path
+      description: Eindeutige Rezept-ID.
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    TagParam:
+      name: tag
+      in: path
+      description: Rezept-Tag.
+      required: true
+      schema:
+        type: string
+        example: Pakistani
+    MealTypeParam:
+      name: mealType
+      in: path
+      description: Meal-Type Filter.
+      required: true
+      schema:
+        type: string
+        example: snack
+    SearchQueryParam:
+      name: q
+      in: query
+      description: Suchbegriff fuer Rezepte.
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        example: Margherita
+  schemas:
+    RecipeDifficulty:
+      type: string
+      enum: [Easy, Medium, Hard]
+    Recipe:
+      type: object
+      required:
+        - id
+        - name
+        - ingredients
+        - instructions
+        - prepTimeMinutes
+        - cookTimeMinutes
+        - servings
+        - difficulty
+        - cuisine
+        - caloriesPerServing
+        - tags
+        - userId
+        - image
+        - rating
+        - reviewCount
+        - mealType
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          example: 1
+        name:
+          type: string
+          example: Classic Margherita Pizza
+        ingredients:
+          type: array
+          items:
+            type: string
+          example:
+            - Pizza dough
+            - Tomato sauce
+            - Fresh mozzarella cheese
+        instructions:
+          type: array
+          items:
+            type: string
+          example:
+            - Preheat the oven to 475F (245C).
+            - Roll out the dough and add sauce.
+        prepTimeMinutes:
+          type: integer
+          minimum: 0
+          example: 20
+        cookTimeMinutes:
+          type: integer
+          minimum: 0
+          example: 15
+        servings:
+          type: integer
+          minimum: 1
+          example: 4
+        difficulty:
+          $ref: '#/components/schemas/RecipeDifficulty'
+        cuisine:
+          type: string
+          example: Italian
+        caloriesPerServing:
+          type: integer
+          minimum: 0
+          example: 300
+        tags:
+          type: array
+          items:
+            type: string
+          example:
+            - Pizza
+            - Italian
+        userId:
+          type: integer
+          minimum: 1
+          example: 45
+        image:
+          type: string
+          format: uri
+          example: https://cdn.dummyjson.com/recipe-images/1.webp
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          example: 4.6
+        reviewCount:
+          type: integer
+          minimum: 0
+          example: 3
+        mealType:
+          type: array
+          items:
+            type: string
+          example:
+            - Dinner
+    RecipeCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        ingredients:
+          type: array
+          items:
+            type: string
+        instructions:
+          type: array
+          items:
+            type: string
+        prepTimeMinutes:
+          type: integer
+          minimum: 0
+        cookTimeMinutes:
+          type: integer
+          minimum: 0
+        servings:
+          type: integer
+          minimum: 1
+        difficulty:
+          $ref: '#/components/schemas/RecipeDifficulty'
+        cuisine:
+          type: string
+        caloriesPerServing:
+          type: integer
+          minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+        userId:
+          type: integer
+          minimum: 1
+        image:
+          type: string
+          format: uri
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: integer
+          minimum: 0
+        mealType:
+          type: array
+          items:
+            type: string
+    RecipeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        ingredients:
+          type: array
+          items:
+            type: string
+        instructions:
+          type: array
+          items:
+            type: string
+        prepTimeMinutes:
+          type: integer
+          minimum: 0
+        cookTimeMinutes:
+          type: integer
+          minimum: 0
+        servings:
+          type: integer
+          minimum: 1
+        difficulty:
+          $ref: '#/components/schemas/RecipeDifficulty'
+        cuisine:
+          type: string
+        caloriesPerServing:
+          type: integer
+          minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+        userId:
+          type: integer
+          minimum: 1
+        image:
+          type: string
+          format: uri
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: integer
+          minimum: 0
+        mealType:
+          type: array
+          items:
+            type: string
+    RecipeListResponse:
+      type: object
+      required: [recipes, total, skip, limit]
+      properties:
+        recipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Recipe'
+        total:
+          type: integer
+          minimum: 0
+          example: 50
+        skip:
+          type: integer
+          minimum: 0
+          example: 0
+        limit:
+          type: integer
+          minimum: 0
+          example: 30
+    RecipeTagsResponse:
+      type: array
+      items:
+        type: string
+      example:
+        - Pizza
+        - Italian
+        - Dessert
+    DeletedRecipeResponse:
+      allOf:
+        - $ref: '#/components/schemas/Recipe'
+        - type: object
+          required: [isDeleted, deletedOn]
+          properties:
+            isDeleted:
+              type: boolean
+              enum: [true]
+            deletedOn:
+              type: string
+              format: date-time
+    ErrorResponse:
+      type: object
+      description: Generisches Fehlerobjekt fuer nicht erfolgreiche Antworten.
+      additionalProperties: true
+paths:
+  /recipes:
+    get:
+      tags: [recipes]
+      summary: Alle Rezepte lesen
+      operationId: listRecipes
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SkipParam'
+        - $ref: '#/components/parameters/SelectParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/OrderParam'
+      responses:
+        '200':
+          description: Rezeptliste mit Pagination-Metadaten.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/search:
+    get:
+      tags: [recipes]
+      summary: Rezepte suchen
+      operationId: searchRecipes
+      parameters:
+        - $ref: '#/components/parameters/SearchQueryParam'
+      responses:
+        '200':
+          description: Gefilterte Rezeptliste fuer den Suchbegriff.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/tags:
+    get:
+      tags: [recipes]
+      summary: Alle Rezept-Tags lesen
+      operationId: listRecipeTags
+      responses:
+        '200':
+          description: Liste aller verfuegbaren Rezept-Tags.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeTagsResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/tag/{tag}:
+    get:
+      tags: [recipes]
+      summary: Rezepte nach Tag lesen
+      operationId: listRecipesByTag
+      parameters:
+        - $ref: '#/components/parameters/TagParam'
+      responses:
+        '200':
+          description: Rezeptliste fuer den gewaehlten Tag.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/meal-type/{mealType}:
+    get:
+      tags: [recipes]
+      summary: Rezepte nach Meal-Type lesen
+      operationId: listRecipesByMealType
+      parameters:
+        - $ref: '#/components/parameters/MealTypeParam'
+      responses:
+        '200':
+          description: Rezeptliste fuer den gewaehlten Meal-Type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/add:
+    post:
+      tags: [recipes]
+      summary: Rezept anlegen
+      description: >-
+        Simuliert das Anlegen eines Rezepts. Laut DummyJSON wird der Datensatz nicht
+        serverseitig persistiert.
+      operationId: addRecipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCreateRequest'
+      responses:
+        '200':
+          description: Simuliert angelegtes Rezept mit neuer ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /recipes/{id}:
+    get:
+      tags: [recipes]
+      summary: Einzelnes Rezept lesen
+      operationId: getRecipe
+      parameters:
+        - $ref: '#/components/parameters/RecipeIdParam'
+      responses:
+        '200':
+          description: Rezept gefunden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [recipes]
+      summary: Rezept vollstaendig aktualisieren
+      description: >-
+        Simuliert ein Update. Laut DummyJSON wird der Datensatz nicht serverseitig
+        persistiert.
+      operationId: replaceRecipe
+      parameters:
+        - $ref: '#/components/parameters/RecipeIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeUpdateRequest'
+      responses:
+        '200':
+          description: Simuliert aktualisiertes Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags: [recipes]
+      summary: Rezept teilweise aktualisieren
+      description: >-
+        Simuliert ein partielles Update. Laut DummyJSON wird der Datensatz nicht
+        serverseitig persistiert.
+      operationId: updateRecipe
+      parameters:
+        - $ref: '#/components/parameters/RecipeIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeUpdateRequest'
+      responses:
+        '200':
+          description: Simuliert aktualisiertes Rezept.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [recipes]
+      summary: Rezept loeschen
+      description: >-
+        Simuliert das Loeschen. Laut DummyJSON wird der Datensatz nicht serverseitig
+        persistiert.
+      operationId: deleteRecipe
+      parameters:
+        - $ref: '#/components/parameters/RecipeIdParam'
+      responses:
+        '200':
+          description: Geloeschtes Rezept mit Loeschmarkierungen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedRecipeResponse'
+        default:
+          description: Unerwarteter Fehler.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,23 @@
+# ── Local tooling & IDE ───────────────────────────────────────────────────────
+.clinerules/
+.vscode/
+tools/
+
+# ── Commit log (local only) ───────────────────────────────────────────────────
+commit.log.md
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+**/*.tsbuildinfo
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+**/node_modules/
+
+# ── Environment / secrets (root only) ────────────────────────────────────────
+/.env
+/.env.*
+
+# ── Test runtime artefacts ────────────────────────────────────────────────────
+tests/tmp/
+tests/test_runs/*.log

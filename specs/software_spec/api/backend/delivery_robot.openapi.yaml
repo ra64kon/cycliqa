@@ -1,0 +1,189 @@
+openapi: 3.1.0
+info:
+  title: delivery_robot API
+  version: 0.1.1
+  description: API der Component delivery_robot gemass implementierter Hono-Routen. Im Demo-Standardpfad wird das Auslieferungsziel serverseitig auf `internal` gesetzt; Wiederholung und Eskalation sind technische Alternativpfade.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: delivery_robot
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    DeliverOrderRequest:
+      type: object
+      required: [order_id, destination]
+      properties:
+        order_id:
+          type: string
+        destination:
+          type: string
+    RetryDeliveryRequest:
+      type: object
+      required: [order_id]
+      properties:
+        order_id:
+          type: string
+    EscalateDeliveryRequest:
+      type: object
+      required: [order_id, failure_reason]
+      properties:
+        order_id:
+          type: string
+        failure_reason:
+          type: string
+    DeliveryStatus:
+      type: string
+      enum: [delivered, failed, escalated]
+    DeliveryResponse:
+      type: object
+      required: [order_id, status, attempt_number]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        attempt_number:
+          type: integer
+    RetryDeliveryResponse:
+      type: object
+      required: [order_id, status, retry_count]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        retry_count:
+          type: integer
+    EscalateDeliveryResponse:
+      type: object
+      required: [order_id, status, failure_reason]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+        failure_reason:
+          type: string
+paths:
+  /api/v1/delivery:
+    post:
+      tags: [delivery_robot]
+      summary: Bestellung ausliefern
+      operationId: deliver_order
+      description: Erwartet ein technisches Auslieferungsziel. Im Demo-Standardpfad liefert process_control den Wert `internal`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverOrderRequest'
+      responses:
+        '200':
+          description: Auslieferungsversuch verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/delivery/retry:
+    post:
+      tags: [delivery_robot]
+      summary: Auslieferung wiederholen
+      operationId: retry_delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryDeliveryRequest'
+      responses:
+        '200':
+          description: Wiederholungsversuch verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetryDeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/delivery/escalate:
+    post:
+      tags: [delivery_robot]
+      summary: Auslieferung eskalieren
+      operationId: escalate_delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalateDeliveryRequest'
+      responses:
+        '200':
+          description: Eskalation verarbeitet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EscalateDeliveryResponse'
+        '400':
+          description: Fehlende Pflichtfelder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

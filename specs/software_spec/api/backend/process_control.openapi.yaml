@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: process_control API
+  version: 0.1.1
+  description: Interne API der Component process_control. Die Orchestrierung steuert andere Components ausschliesslich ueber deren APIs an.
+servers:
+  - url: http://localhost:3000
+security:
+  - bearerAuth: []
+tags:
+  - name: process_control
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    StartOrderProcessRequest:
+      type: object
+      required: [order_id, beverage_type, with_milk_foam]
+      properties:
+        order_id:
+          type: string
+        beverage_type:
+          type: string
+          enum: [Espresso, Cappuccino, Latte Macchiato]
+        with_milk_foam:
+          type: boolean
+        process_id:
+          type: string
+    ProcessStatus:
+      type: string
+      enum: [running, completed, escalated]
+    StartOrderProcessResponse:
+      type: object
+      required: [process_id, order_id, process_status]
+      properties:
+        process_id:
+          type: string
+        order_id:
+          type: string
+        process_status:
+          $ref: '#/components/schemas/ProcessStatus'
+    ProcessStatusResponse:
+      type: object
+      required: [process_id, order_id, process_status]
+      properties:
+        process_id:
+          type: string
+        order_id:
+          type: string
+        process_status:
+          $ref: '#/components/schemas/ProcessStatus'
+        last_completed_step:
+          type:
+            - string
+            - 'null'
+paths:
+  /api/v1/process-control/processes:
+    post:
+      tags: [process_control]
+      summary: Bestellprozess starten
+      operationId: start_order_process
+      description: Legt eine Prozessinstanz an und startet die Orchestrierung asynchron. Das technische Auslieferungsziel wird intern gesetzt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartOrderProcessRequest'
+      responses:
+        '201':
+          description: Prozessinstanz angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartOrderProcessResponse'
+        '400':
+          description: Fehlende Pflichtfelder oder Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/process-control/processes/{processId}:
+    get:
+      tags: [process_control]
+      summary: Prozessstatus lesen
+      operationId: get_process_status
+      description: Liefert den technischen Live-Fortschritt ueber `process_status` und `last_completed_step`.
+      parameters:
+        - in: path
+          name: processId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Prozessstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStatusResponse'
+        '400':
+          description: Verarbeitungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prozess nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ungueltiger Bearer-Token oder unzureichende Berechtigung
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: web_channel API
+  version: 0.1.0
+  description: API der kanalgebundenen Web-Komponente. Das Frontend interagiert ausschliesslich mit dieser API.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: web_channel
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    SessionTokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+    BeverageType:
+      type: string
+      enum: [Espresso, Cappuccino, Latte Macchiato]
+    OrderStatus:
+      type: string
+      enum: [accepted, delivered, delivery_escalated]
+    ProcessStatus:
+      type: string
+      enum: [running, completed, escalated]
+    SubmitOrderRequest:
+      type: object
+      required: [beverage_type, with_milk_foam, customer_name]
+      properties:
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    SubmitOrderResponse:
+      type: object
+      required: [order_id, process_id, status, beverage_type, with_milk_foam, customer_name]
+      properties:
+        order_id:
+          type: string
+        process_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    OrderResponse:
+      type: object
+      required: [order_id, status, beverage_type, with_milk_foam, customer_name]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        beverage_type:
+          $ref: '#/components/schemas/BeverageType'
+        with_milk_foam:
+          type: boolean
+        customer_name:
+          type: string
+    ProcessStatusResponse:
+      type: object
+      required: [process_id, order_id, process_status]
+      properties:
+        process_id:
+          type: string
+        order_id:
+          type: string
+        process_status:
+          $ref: '#/components/schemas/ProcessStatus'
+        last_completed_step:
+          type:
+            - string
+            - 'null'
+paths:
+  /api/v1/web-channel/session:
+    post:
+      tags: [web_channel]
+      summary: Web-Session starten
+      security: []
+      responses:
+        '200':
+          description: Bearer-Token fuer den Web-Kanal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTokenResponse'
+  /api/v1/web-channel/orders:
+    post:
+      tags: [web_channel]
+      summary: Bestellung ueber den Web-Kanal anlegen
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitOrderRequest'
+      responses:
+        '201':
+          description: Bestellung und Prozess angelegt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitOrderResponse'
+        '400':
+          description: Ungueltige Eingabe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/web-channel/orders/{orderId}:
+    get:
+      tags: [web_channel]
+      summary: Bestellstatus ueber den Web-Kanal lesen
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Bestellstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bestellung nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/web-channel/processes/{processId}:
+    get:
+      tags: [web_channel]
+      summary: Prozessfortschritt ueber den Web-Kanal lesen
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: processId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aktueller Prozessstatus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessStatusResponse'
+        '401':
+          description: Fehlender oder ungueltiger Bearer-Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Prozess nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

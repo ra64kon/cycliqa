@@ -1,0 +1,36 @@
+{
+  "name": "cycliqa-brew-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:web-channel": "tsx watch src/servers/web_channel.ts",
+    "dev:order-terminal": "tsx watch src/servers/order_terminal.ts",
+    "dev:brewing-station": "tsx watch src/servers/brewing_station.ts",
+    "dev:delivery-robot": "tsx watch src/servers/delivery_robot.ts",
+    "dev:process-control": "tsx watch src/servers/process_control.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:web-channel": "node dist/servers/web_channel.js",
+    "start:order-terminal": "node dist/servers/order_terminal.js",
+    "start:brewing-station": "node dist/servers/brewing_station.js",
+    "start:delivery-robot": "node dist/servers/delivery_robot.js",
+    "start:process-control": "node dist/servers/process_control.js",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.8.5",
+    "sql.js": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/sql.js": "^1.4.9",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
