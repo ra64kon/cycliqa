@@ -76,7 +76,7 @@ The following rules apply to Services:
 - Services do not call Services outside their own Component, except `subprocess_service`.
 - The ideal naming of a Service follows the pattern `object_verb`.
 - Services of type `adapter_service` that face outward align their cut and data model with the data source and provide standardised Services internally.
-- There are Services for reading and writing on the leading Business Object as a standard, except for `process_component`.
+- There are separate Services for reading and writing on the leading Business Object as a standard, except for `process_component`.
 - Additional Services are only permitted if their logic is object-inherent and not process-specific.
 - More complex object-inherent process logic can be modelled as `subprocess_service`.
 
@@ -180,7 +180,7 @@ Events and Commands are specified as POST. From this, the Message specification 
 
 - `subprocess_service`: is triggered via a Command and returns feedback as an Event
 - `basic_service`: is primarily represented as a Query
-- `data_service`: is primarily represented as a Query or Command on the leading Business Object
+- `data_service`: is primarily modelled either as a Query or Command on the leading Business Object
 - `adapter_service`: maps the communication pattern of the encapsulated foreign interface outward and provides standardised Commands, Events, or Queries internally
 
 ## Terms and Naming Rules
