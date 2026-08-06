@@ -8,7 +8,7 @@ version: 0.1.2
 
 # Enterprise Tech Stack
 
-This is the project-specific solution stack for the example project Cycliqa (CoffeeToGo).
+This is the project-specific solution stack for the example project CoffeeToGo (built with the AI Architecture Template).
 
 ## Technology Decisions
 

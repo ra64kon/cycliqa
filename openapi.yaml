@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: CoffeeToGo API
   version: 0.1.2
-  description: Konsolidierte API-Spezifikation fuer das Projekt Cycliqa (CoffeeToGo). Das Frontend interagiert ausschliesslich mit dem web_channel; interne Komponenten sprechen ueber signierte Bearer-Tokens miteinander.
+  description: Konsolidierte API-Spezifikation fuer das Projekt AI Architecture Template (CoffeeToGo). Das Frontend interagiert ausschliesslich mit dem web_channel; interne Komponenten sprechen ueber signierte Bearer-Tokens miteinander.
 servers:
   - url: http://localhost:3000
 security:

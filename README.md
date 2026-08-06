@@ -1,14 +1,11 @@
-# Cycliqa - Software Lifecycle Automation
+# AI Architecture Template - Software Lifecycle Automation
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fcycliqa.org)](https://cycliqa.org)
 
-**C**omplete **Y**ield & **C**ode **L**ifecycle **I**ntelligence **Q**uality **A**utomation
-
-Cycliqa is an architecture-driven template for AI-agent-based specification and implementation of unstructured business requirements. It serves to automate and orchestrate the entire Software Development Lifecycle (SDLC). The primary goal of the framework is to seamlessly bridge the gap between business requirements, functional and technical specifications, IT security, and enterprise-ready code, while ensuring technology-agnostic reproducibility.
+The AI Architecture Template is an architecture-driven template for AI-agent-based specification and implementation of unstructured business requirements. It serves to automate and orchestrate the entire Software Development Lifecycle (SDLC). The primary goal of the framework is to seamlessly bridge the gap between business requirements, functional and technical specifications, IT security, and enterprise-ready code, while ensuring technology-agnostic reproducibility.
 
 ## Challenges in the Modern SDLC
-Depending on the methodical approach, software development faces specific challenges that Cycliqa systematically addresses:
+Depending on the methodical approach, software development faces specific challenges that the AI Architecture Template systematically addresses:
 
 1. Classical Projects
 
@@ -25,9 +22,9 @@ Depending on the methodical approach, software development faces specific challe
 * Code Heterogeneity: Different AI agents leave behind varying programming styles, leading to a codebase that is difficult to maintain.
 * Token Explosion: A lack of architectural guardrails leads to exponentially rising token costs during ongoing refactorings.
 
-## Cycliqa's Solution Concepts
+## Solution Concepts
 
-Cycliqa solves these problems through an architecture-centric, automated approach:
+The template solves these problems through an architecture-centric, automated approach:
 
 * Prevention of Code Drift (Spec-Driven Solved): The framework accepts abstract project requirements or architecture sketches and translates them directly into structured, testable artifacts. As a result, the source code is fully reproducible from the specification at any time.
 * Structured Agent Collaboration (AI-Driven Solved): Through a firmly predefined architectural framework, AI agents receive clear guardrails. This prevents inconsistent code styles and minimizes token consumption during refactorings.

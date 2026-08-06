@@ -2,8 +2,8 @@ The current version for the repository is maintained here:
 
 ---
 
-version: 1.0.2
+version: 1.1.0
 verification-status: verified
-description: update core architecture model - Data-Services as separate Operations
+description: Project RenamingOperations
 
 ---
